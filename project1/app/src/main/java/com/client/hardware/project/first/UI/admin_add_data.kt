@@ -195,7 +195,6 @@ class admin_add_data : AppCompatActivity() {
         etDimensions.text.clear()
         setimagedefault()
     }
-
     private fun setimagedefault() {
         val defaultImageResId = R.drawable.icn_default_iv
         imgProduct.setImageResource(defaultImageResId)
