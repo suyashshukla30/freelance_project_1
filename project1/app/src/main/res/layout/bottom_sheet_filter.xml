@@ -1,0 +1,39 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- Quality Spinner -->
+    <Spinner
+        android:id="@+id/spinnerQuality"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <!-- Dimension Spinner -->
+    <Spinner
+        android:id="@+id/spinnerDimension"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <!-- Apply Filter Button -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnApplyFilter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Apply Filter" />
+
+        <Button
+            android:id="@+id/btn_clr_filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="Clear All" />
+    </LinearLayout>
+
+</LinearLayout>
