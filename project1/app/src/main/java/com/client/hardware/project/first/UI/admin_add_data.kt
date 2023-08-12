@@ -1,5 +1,7 @@
 package com.client.hardware.project.first.UI
 
+import android.R.attr.name
+import android.R.id
 import android.app.Activity
 import android.content.Intent
 import android.graphics.ImageDecoder
@@ -15,13 +17,17 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.client.hardware.project.first.R
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
 import com.pixplicity.easyprefs.library.Prefs
 import java.io.File
+
 
 class admin_add_data : AppCompatActivity() {
     private lateinit var etProductName: EditText
@@ -34,16 +40,26 @@ class admin_add_data : AppCompatActivity() {
     private lateinit var btnSubmit: Button
     private lateinit var selectedImageUri: Uri
     private lateinit var continue_to_user: TextView
-
-
+    private lateinit var firebase_analytics: FirebaseAnalytics
     private lateinit var firebaseStorage: FirebaseStorage
     private lateinit var firebaseDatabase: FirebaseDatabase
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_admin_add_data)
+        Prefs.Builder()
+            .setContext(this)
+            .setMode(MODE_PRIVATE)
+            .setPrefsName(packageName)
+            .setUseDefaultSharedPreference(true)
+            .build()
         Prefs.putBoolean("is_admin", false)
         firebaseStorage = FirebaseStorage.getInstance()
         firebaseDatabase = FirebaseDatabase.getInstance()
+        firebase_analytics = Firebase.analytics
+        firebase_analytics.setUserProperty("skill_level", "admin")
+        val bundle = Bundle()
+        bundle.putString("skill_level", "admin")
+        firebase_analytics.logEvent("event_good", bundle)
         etProductName = findViewById(R.id.etProductName)
         etProductId = findViewById(R.id.etProductId)
         imgProduct = findViewById(R.id.imgProduct)
@@ -109,6 +125,10 @@ class admin_add_data : AppCompatActivity() {
     }
 
     private fun submitDataToFirebase() {
+        val package_name: String = this.packageName.toString().substring(
+            this.packageName.toString().lastIndexOf('.')+1,
+            this.packageName.toString().length
+        )
         val productName = etProductName.text.toString()
         val productId = etProductId.text.toString()
         val pricePerUnit = etPricePerUnit.text.toString()
@@ -119,9 +139,9 @@ class admin_add_data : AppCompatActivity() {
         if (imageUri != null && productName.isNotEmpty() && productId.isNotEmpty() && pricePerUnit.isNotEmpty()
             && quality.isNotEmpty() && dimensions.isNotEmpty()
         ) {
-            val imageRef = firebaseStorage.reference.child("product_images").child(productId)
+            val imageRef = firebaseStorage.reference.child(package_name).child("product_images").child(productId)
             val databaseRef =
-                firebaseDatabase.reference.child("products").child(productId)
+                firebaseDatabase.reference.child(package_name).child("products").child(productId)
             databaseRef.addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(dataSnapshot: DataSnapshot) {
                     if (dataSnapshot.exists()) {
@@ -178,7 +198,6 @@ class admin_add_data : AppCompatActivity() {
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    TODO("Not yet implemented")
                 }
             })
         } else {
@@ -194,6 +213,7 @@ class admin_add_data : AppCompatActivity() {
         etDimensions.text.clear()
         setimagedefault()
     }
+
     private fun setimagedefault() {
         val defaultImageResId = R.drawable.icn_default_iv
         imgProduct.setImageResource(defaultImageResId)

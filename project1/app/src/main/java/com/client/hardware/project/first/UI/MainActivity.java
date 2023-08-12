@@ -21,6 +21,7 @@ import com.client.hardware.project.first.ADAPTER.ProductAdapter;
 import com.client.hardware.project.first.MODEL.Product;
 import com.client.hardware.project.first.R;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -41,27 +42,26 @@ public class MainActivity extends AppCompatActivity {
     DatabaseReference databaseReference;
     List<Product> productList;
     ImageView iv_filter_icn;
+    private FirebaseAnalytics mFirebaseAnalytics;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        new Prefs.Builder()
-                .setContext(this)
-                .setMode(ContextWrapper.MODE_PRIVATE)
-                .setPrefsName(getPackageName())
-                .setUseDefaultSharedPreference(true)
-                .build();
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
+
+        Bundle bundle = new Bundle();
+        bundle.putString("event1", "image");
+        mFirebaseAnalytics.logEvent("skills", bundle);
+        mFirebaseAnalytics.setUserProperty("user_type", "Purchase");
         recyclerView = findViewById(R.id.rv_all_data);
         data_search_bar = findViewById(R.id.sv_item);
         iv_filter_icn = findViewById(R.id.iv_filter_list);
         data_base_ref = FirebaseDatabase.getInstance();
+/*
         databaseReference = data_base_ref.getReference().child("products");
+*/
         productList = new ArrayList<>();
-        if (Prefs.getBoolean("is_admin", false)) {
-            Prefs.putBoolean("is_admin", true);
-            startActivity(new Intent(this, admin_add_data.class));
-        }
         fetch_Data_from_firebase();
         data_search_bar.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
@@ -85,7 +85,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void openFilter() {
         List<String> item_quality_list = new ArrayList<>();
+        item_quality_list.add(0, "Select");
         List<String> item_dimension_list = new ArrayList<>();
+        item_dimension_list.add(0, "Select");
         BottomSheetDialog item_quality_bottom_sheet_dialog = new BottomSheetDialog(this);
         item_quality_bottom_sheet_dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         item_quality_bottom_sheet_dialog.setContentView(R.layout.bottom_sheet_filter);
@@ -118,8 +120,11 @@ public class MainActivity extends AppCompatActivity {
         apply_filter.setOnClickListener(view -> {
             String selectedQuality = item_quality.getSelectedItem().toString();
             String selectedDimension = item_dimension.getSelectedItem().toString();
-            productAdapter.applyFilter(selectedQuality, selectedDimension);
-            item_quality_bottom_sheet_dialog.dismiss();
+            if(!selectedDimension.equals("Select")&& !selectedQuality.equals("Select"))
+            {
+                productAdapter.applyFilter(selectedQuality, selectedDimension);
+                item_quality_bottom_sheet_dialog.dismiss();
+            }
         });
         clear_filter.setOnClickListener(view -> {
             productAdapter.clearFilters();
@@ -130,7 +135,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void fetch_Data_from_firebase() {
-        databaseReference.addValueEventListener(new ValueEventListener() {
+        DatabaseReference packageReference = data_base_ref.getReference().child(getPackageName().toString().substring(
+                getPackageName().lastIndexOf('.') + 1,
+                getPackageName().length()
+        ));
+        DatabaseReference productsReference = packageReference.child("products");
+        productsReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 for (DataSnapshot productSnapshot : snapshot.getChildren()) {
@@ -140,10 +150,17 @@ public class MainActivity extends AppCompatActivity {
                             productSnapshot.child("dimensions").getValue().toString(),
                             productSnapshot.child("pricePerUnit").getValue().toString(),
                             productSnapshot.child("imageUrl").getValue().toString());
-//                    Product product = productSnapshot.getValue(Product.class);
                     productList.add(product);
                 }
-                productAdapter = new ProductAdapter(productList);
+                productAdapter = new ProductAdapter(productList, new ProductAdapter.ItemClickListener() {
+                    @Override
+                    public void onItemClick(String productId) {
+                        // Handle item click here, navigate to CartActivity with the productId
+                        Intent intent = new Intent(MainActivity.this, CartActivity.class);
+                        intent.putExtra("itemId", productId);
+                        startActivity(intent);
+                    }
+                });
                 recyclerView.setAdapter(productAdapter);
                 recyclerView.setLayoutManager(
                         new LinearLayoutManager(MainActivity.this));

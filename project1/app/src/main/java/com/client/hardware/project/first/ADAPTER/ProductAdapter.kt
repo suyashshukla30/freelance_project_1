@@ -14,7 +14,7 @@ import com.client.hardware.project.first.R
 import java.util.Locale
 
 
-class ProductAdapter(private val productlist: List<Product>) :
+class ProductAdapter(private val productlist: List<Product>, private val itemClickListener: ItemClickListener) :
     RecyclerView.Adapter<ProductAdapter.ViewHolder>(), Filterable {
     private var filteredList: List<Product> = productlist.toList()
     private var selectedQuality = ""
@@ -42,6 +42,15 @@ class ProductAdapter(private val productlist: List<Product>) :
                 .placeholder(R.drawable.icn_default_iv)
                 .into(ivProductImage)
         }
+        init {
+            itemView.setOnClickListener {
+                val product = filteredList[adapterPosition]
+                itemClickListener.onItemClick(product.productId ?: "")
+            }
+        }
+    }
+    interface ItemClickListener {
+        fun onItemClick(productId: String)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -57,6 +66,7 @@ class ProductAdapter(private val productlist: List<Product>) :
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val product = filteredList[position]
         holder.bind(product)
+
     }
 
     override fun getFilter(): Filter {
